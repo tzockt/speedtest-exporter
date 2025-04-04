@@ -1,4 +1,4 @@
-FROM python:3.11.0-alpine3.15
+FROM python:3.11.11-alpine3.21
 
 # Speedtest CLI Version
 ARG SPEEDTEST_VERSION=1.2.0
@@ -28,4 +28,4 @@ USER speedtest
 
 CMD ["python", "-u", "exporter.py"]
 
-HEALTHCHECK --timeout=10s CMD wget --no-verbose --tries=1 --spider http://localhost:${SPEEDTEST_PORT:=9798}/
+HEALTHCHECK --timeout=10s CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${SPEEDTEST_PORT:=9798}/
