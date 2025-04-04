@@ -46,7 +46,7 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm/v7,linux/arm64
-          push: false
+          push: true
           tags: | 
-            miguelndecarvalho/speedtest-exporter:latest
-            ghcr.io/miguelndecarvalho/speedtest-exporter:latest
+            tzockt/speedtest-exporter:latest
+            ghcr.io/tzockt/speedtest-exporter:latest
