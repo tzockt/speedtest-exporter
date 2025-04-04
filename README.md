@@ -1,10 +1,18 @@
 # Speedtest Exporter
 
-Simple **Speedtest exporter** for **Prometheus** written in **Python** using the
-official CLI from **Ookla**
+A simple **Speedtest Exporter** for **Prometheus**, written in **Python** using the official CLI from **Ookla**.
 
-You can get all the documentation [here](https://docs.miguelndecarvalho.pt/projects/speedtest-exporter/)
+This repository is a **fork** of [miguelndecarvalho/speedtest-exporter](https://github.com/miguelndecarvalho/speedtest-exporter).
+
+You can find the original documentation [here](https://docs.miguelndecarvalho.pt/projects/speedtest-exporter/).
+
+## About this fork
+
+This fork is maintained by [tzockt](https://github.com/tzockt) and may include custom modifications, packaging, or workflow changes (e.g., publishing images to GitHub Container Registry).
+
+If you're looking for the original project or want stable releases, consider using the upstream repository linked above.
 
 ## Thanks to
 
-- [Nils Müller](https://github.com/tyriis)
+
+- [Miguel N. de Carvalho](https://github.com/miguelndecarvalho) – author of the original project
