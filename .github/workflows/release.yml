@@ -1,9 +1,14 @@
+---
 name: Release Docker Image with new Tag
 
 on:
   push:
     tags:
-      - '*'
+      - "*"
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   release-docker:
@@ -27,7 +32,7 @@ jobs:
 
       - name: Get Current Tag
         id: tag
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6

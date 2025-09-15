@@ -1,0 +1,5 @@
+{
+  "threshold": 50,
+  "reporters": ["console"],
+  "ignore": ["Dashboard/**"]
+}

@@ -12,9 +12,7 @@ app = Flask("Speedtest-Exporter")  # Create flask app
 
 # Setup logging values
 format_string = "level=%(levelname)s datetime=%(asctime)s %(message)s"
-logging.basicConfig(
-    encoding="utf-8", level=logging.DEBUG, format=format_string
-)
+logging.basicConfig(encoding="utf-8", level=logging.DEBUG, format=format_string)
 
 # Disable Waitress Logs
 log = logging.getLogger("waitress")
@@ -25,9 +23,7 @@ server = Gauge("speedtest_server_id", "Speedtest server ID used to test")
 jitter = Gauge(
     "speedtest_jitter_latency_milliseconds", "Speedtest current Jitter in ms"
 )
-ping = Gauge(
-    "speedtest_ping_latency_milliseconds", "Speedtest current Ping in ms"
-)
+ping = Gauge("speedtest_ping_latency_milliseconds", "Speedtest current Ping in ms")
 download_speed = Gauge(
     "speedtest_download_bits_per_second",
     "Speedtest current Download Speed in bit/s",
