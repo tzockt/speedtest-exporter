@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     wget -nv -O /tmp/speedtest.tgz "https://install.speedtest.net/app/cli/ookla-speedtest-${SPEEDTEST_VERSION}-linux-${ARCHITECTURE}.tgz" && \
     tar zxvf /tmp/speedtest.tgz -C /tmp && \
     cp /tmp/speedtest /usr/local/bin && \
+    chmod +x /usr/local/bin/speedtest && \
     chown -R speedtest:speedtest /app && \
     rm -rf \
      /tmp/* \

@@ -14,5 +14,4 @@ If you're looking for the original project or want stable releases, consider usi
 
 ## Thanks to
 
-
 - [Miguel N. de Carvalho](https://github.com/miguelndecarvalho) – author of the original project
