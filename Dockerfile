@@ -1,4 +1,4 @@
-FROM python:3.11.11-alpine3.21
+FROM python:3.13.7-alpine3.21
 
 # Speedtest CLI Version
 ARG SPEEDTEST_VERSION=1.2.0
