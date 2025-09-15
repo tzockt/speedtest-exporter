@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   lint:
@@ -111,14 +112,15 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: false
-          tags: speedtest-exporter:test
+          tags: speedtest-exporter:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true
 
       - name: Test Docker image
         run: |
-          docker run --rm -d --name test-container -p 9798:9798 speedtest-exporter:test
-          sleep 10
-          curl -f http://localhost:9798/health
-          curl -f http://localhost:9798/
+          docker run --rm -d --name test-container -p 9798:9798 speedtest-exporter:ci-test
+          sleep 15
+          curl -f http://localhost:9798/health || (docker logs test-container && exit 1)
+          curl -f http://localhost:9798/ || (docker logs test-container && exit 1)
           docker stop test-container

@@ -36,29 +36,21 @@ app = Flask(__name__)
 
 # Prometheus metrics
 speedtest_server_id = Gauge(
-    "speedtest_server_id", 
-    "Speedtest server ID used for testing"
+    "speedtest_server_id", "Speedtest server ID used for testing"
 )
 speedtest_jitter = Gauge(
-    "speedtest_jitter_latency_milliseconds", 
-    "Speedtest jitter in milliseconds"
+    "speedtest_jitter_latency_milliseconds", "Speedtest jitter in milliseconds"
 )
 speedtest_ping = Gauge(
-    "speedtest_ping_latency_milliseconds", 
-    "Speedtest ping latency in milliseconds"
+    "speedtest_ping_latency_milliseconds", "Speedtest ping latency in milliseconds"
 )
 speedtest_download = Gauge(
-    "speedtest_download_bits_per_second", 
-    "Speedtest download speed in bits per second"
+    "speedtest_download_bits_per_second", "Speedtest download speed in bits per second"
 )
 speedtest_upload = Gauge(
-    "speedtest_upload_bits_per_second", 
-    "Speedtest upload speed in bits per second"
+    "speedtest_upload_bits_per_second", "Speedtest upload speed in bits per second"
 )
-speedtest_up = Gauge(
-    "speedtest_up", 
-    "Speedtest status - 1 if successful, 0 if failed"
-)
+speedtest_up = Gauge("speedtest_up", "Speedtest status - 1 if successful, 0 if failed")
 
 # Configuration
 CACHE_DURATION = int(os.environ.get("SPEEDTEST_CACHE_DURATION", "0"))
