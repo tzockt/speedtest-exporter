@@ -65,7 +65,7 @@ jobs:
           pip install -r src/requirements-dev.txt
 
       - name: Run tests
-        run: pytest src/ -v --cov=src/ --cov-report=xml
+        run: pytest tests/ -v --cov=src/ --cov-report=xml
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12'

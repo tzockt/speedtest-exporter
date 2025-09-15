@@ -65,6 +65,7 @@ cached_metrics: Optional[Dict[str, Union[int, float]]] = None
 
 class SpeedtestError(Exception):
     """Custom exception for speedtest errors."""
+
     pass
 
 
@@ -86,25 +87,25 @@ def validate_speedtest_binary() -> None:
             "https://www.speedtest.net/apps/cli"
         )
         sys.exit(1)
-    
+
     try:
         result = subprocess.run(
             ["speedtest", "--version"],
             capture_output=True,
             text=True,
             timeout=10,
-            check=True
+            check=True,
         )
-        
+
         if "Speedtest by Ookla" not in result.stdout:
             logger.error(
                 "Non-official Speedtest CLI detected. Please install the official "
                 "version from: https://www.speedtest.net/apps/cli"
             )
             sys.exit(1)
-            
+
         logger.info(f"Speedtest CLI validated: {result.stdout.strip()}")
-        
+
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
         logger.error(f"Failed to validate Speedtest CLI: {e}")
         sys.exit(1)
@@ -113,10 +114,10 @@ def validate_speedtest_binary() -> None:
 def run_speedtest() -> Dict[str, Union[int, float]]:
     """
     Run speedtest and return metrics.
-    
+
     Returns:
         Dictionary containing speedtest metrics
-        
+
     Raises:
         SpeedtestError: If speedtest fails or returns invalid data
     """
@@ -127,29 +128,27 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
         "--accept-license",
         "--accept-gdpr",
     ]
-    
+
     if SERVER_ID:
         cmd.extend(["--server-id", SERVER_ID])
-        
+
     logger.info(f"Running speedtest with command: {' '.join(cmd)}")
-    
+
     try:
         result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=TIMEOUT,
-            check=True
+            cmd, capture_output=True, text=True, timeout=TIMEOUT, check=True
         )
-        
+
         data = json.loads(result.stdout)
-        
+
         if "error" in data:
             raise SpeedtestError(f"Speedtest error: {data['error']}")
-            
+
         if data.get("type") != "result":
-            raise SpeedtestError(f"Unexpected speedtest output type: {data.get('type')}")
-            
+            raise SpeedtestError(
+                f"Unexpected speedtest output type: {data.get('type')}"
+            )
+
         # Extract metrics
         metrics = {
             "server_id": int(data["server"]["id"]),
@@ -159,7 +158,7 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
             "upload": bytes_to_bits(data["upload"]["bandwidth"]),
             "up": 1,
         }
-        
+
         logger.info(
             f"Speedtest completed - Server: {metrics['server_id']}, "
             f"Ping: {metrics['ping']:.2f}ms, "
@@ -167,13 +166,13 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
             f"Download: {bits_to_megabits(metrics['download']):.2f}Mbps, "
             f"Upload: {bits_to_megabits(metrics['upload']):.2f}Mbps"
         )
-        
+
         return metrics
-        
+
     except subprocess.TimeoutExpired:
         logger.error(f"Speedtest timed out after {TIMEOUT} seconds")
         raise SpeedtestError("Speedtest timeout")
-        
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Speedtest command failed: {e}")
         if e.stdout:
@@ -184,7 +183,7 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
             except json.JSONDecodeError:
                 pass
         raise SpeedtestError("Speedtest command failed")
-        
+
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse speedtest JSON output: {e}")
         raise SpeedtestError("Invalid JSON output from speedtest")
@@ -193,29 +192,29 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
 def get_metrics() -> Dict[str, Union[int, float]]:
     """
     Get speedtest metrics, using cache if available and valid.
-    
+
     Returns:
         Dictionary containing speedtest metrics
     """
     global last_test_time, cached_metrics
-    
+
     now = datetime.now()
     cache_valid = (
-        CACHE_DURATION > 0 
-        and cached_metrics is not None 
+        CACHE_DURATION > 0
+        and cached_metrics is not None
         and (now - last_test_time).total_seconds() < CACHE_DURATION
     )
-    
+
     if cache_valid:
         logger.debug("Using cached metrics")
         return cached_metrics
-    
+
     try:
         metrics = run_speedtest()
         cached_metrics = metrics
         last_test_time = now
         return metrics
-        
+
     except SpeedtestError as e:
         logger.error(f"Speedtest failed: {e}")
         return {
@@ -260,13 +259,14 @@ def health() -> Tuple[str, int]:
     try:
         # Quick validation that speedtest binary is accessible
         subprocess.run(
-            ["speedtest", "--version"],
-            capture_output=True,
-            timeout=5,
-            check=True
+            ["speedtest", "--version"], capture_output=True, timeout=5, check=True
         )
         return "OK", 200
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+    ):
         return "ERROR", 500
 
 
@@ -276,11 +276,11 @@ def metrics() -> Response:
     try:
         metrics_data = get_metrics()
         update_prometheus_metrics(metrics_data)
-        
+
         # Generate Prometheus format
         output = generate_latest()
         return Response(output, mimetype=CONTENT_TYPE_LATEST)
-        
+
     except Exception as e:
         logger.error(f"Error generating metrics: {e}")
         # Return empty metrics on error
@@ -290,17 +290,17 @@ def metrics() -> Response:
 def main() -> None:
     """Main application entry point."""
     logger.info("Starting Speedtest Exporter")
-    
+
     # Log configuration
     logger.info(f"Configuration:")
     logger.info(f"  Port: {PORT}")
     logger.info(f"  Cache Duration: {CACHE_DURATION}s")
     logger.info(f"  Timeout: {TIMEOUT}s")
     logger.info(f"  Server ID: {SERVER_ID or 'Auto'}")
-    
+
     # Validate speedtest binary
     validate_speedtest_binary()
-    
+
     # Start server
     logger.info(f"Starting server on http://0.0.0.0:{PORT}")
     serve(
