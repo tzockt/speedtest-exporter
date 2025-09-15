@@ -10,11 +10,9 @@ import logging
 import os
 import subprocess
 import sys
-import time
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 from shutil import which
-from typing import Dict, Optional, Tuple, Union
+from typing import cast
 
 from flask import Flask, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
@@ -60,7 +58,7 @@ PORT = int(os.environ.get("SPEEDTEST_PORT", "9798"))
 
 # Cache
 last_test_time = datetime.min
-cached_metrics: Optional[Dict[str, Union[int, float]]] = None
+cached_metrics: dict[str, int | float] | None = None
 
 
 class SpeedtestError(Exception):
@@ -69,12 +67,12 @@ class SpeedtestError(Exception):
     pass
 
 
-def bytes_to_bits(bytes_per_sec: Union[int, float]) -> float:
+def bytes_to_bits(bytes_per_sec: int | float) -> float:
     """Convert bytes per second to bits per second."""
     return float(bytes_per_sec) * 8
 
 
-def bits_to_megabits(bits_per_sec: Union[int, float]) -> float:
+def bits_to_megabits(bits_per_sec: int | float) -> float:
     """Convert bits per second to megabits per second."""
     return round(float(bits_per_sec) * 1e-6, 2)
 
@@ -111,7 +109,7 @@ def validate_speedtest_binary() -> None:
         sys.exit(1)
 
 
-def run_speedtest() -> Dict[str, Union[int, float]]:
+def run_speedtest() -> dict[str, int | float]:
     """
     Run speedtest and return metrics.
 
@@ -169,9 +167,9 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
 
         return metrics
 
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
         logger.error(f"Speedtest timed out after {TIMEOUT} seconds")
-        raise SpeedtestError("Speedtest timeout")
+        raise SpeedtestError("Speedtest timeout") from e
 
     except subprocess.CalledProcessError as e:
         logger.error(f"Speedtest command failed: {e}")
@@ -182,14 +180,14 @@ def run_speedtest() -> Dict[str, Union[int, float]]:
                     raise SpeedtestError(f"Speedtest error: {error_data['error']}")
             except json.JSONDecodeError:
                 pass
-        raise SpeedtestError("Speedtest command failed")
+        raise SpeedtestError("Speedtest command failed") from e
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse speedtest JSON output: {e}")
-        raise SpeedtestError("Invalid JSON output from speedtest")
+        raise SpeedtestError("Invalid JSON output from speedtest") from e
 
 
-def get_metrics() -> Dict[str, Union[int, float]]:
+def get_metrics() -> dict[str, int | float]:
     """
     Get speedtest metrics, using cache if available and valid.
 
@@ -207,7 +205,7 @@ def get_metrics() -> Dict[str, Union[int, float]]:
 
     if cache_valid:
         logger.debug("Using cached metrics")
-        return cached_metrics
+        return cast(dict[str, int | float], cached_metrics)
 
     try:
         metrics = run_speedtest()
@@ -227,7 +225,7 @@ def get_metrics() -> Dict[str, Union[int, float]]:
         }
 
 
-def update_prometheus_metrics(metrics: Dict[str, Union[int, float]]) -> None:
+def update_prometheus_metrics(metrics: dict[str, int | float]) -> None:
     """Update Prometheus metrics with speedtest results."""
     speedtest_server_id.set(metrics["server_id"])
     speedtest_jitter.set(metrics["jitter"])
@@ -254,7 +252,7 @@ def index() -> str:
 
 
 @app.route("/health")
-def health() -> Tuple[str, int]:
+def health() -> tuple[str, int]:
     """Health check endpoint."""
     try:
         # Quick validation that speedtest binary is accessible
@@ -292,7 +290,7 @@ def main() -> None:
     logger.info("Starting Speedtest Exporter")
 
     # Log configuration
-    logger.info(f"Configuration:")
+    logger.info("Configuration:")
     logger.info(f"  Port: {PORT}")
     logger.info(f"  Cache Duration: {CACHE_DURATION}s")
     logger.info(f"  Timeout: {TIMEOUT}s")
