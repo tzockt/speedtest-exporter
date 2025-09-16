@@ -1,31 +1,71 @@
-FROM python:3.11.11-alpine3.21
+# Use specific Python version with security updates
+FROM python:3.12.8-alpine3.21
 
-# Speedtest CLI Version
+# Metadata
+LABEL maintainer="tzockt" \
+      description="Speedtest Exporter for Prometheus" \
+      version="2.0.0" \
+      org.opencontainers.image.source="https://github.com/tzockt/speedtest-exporter"
+
+# Speedtest CLI version
 ARG SPEEDTEST_VERSION=1.2.0
 
-# Create user
-RUN adduser -D speedtest
+# Security: Create non-root user early
+RUN addgroup -g 1000 speedtest && \
+    adduser -D -u 1000 -G speedtest speedtest
 
+# Install system dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    wget \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
 WORKDIR /app
-COPY src/requirements.txt .
 
-# Install required modules and Speedtest CLI
-RUN pip install --no-cache-dir -r requirements.txt && \
-    ARCHITECTURE=$(uname -m) && \
-    export ARCHITECTURE && \
-    if [ "$ARCHITECTURE" = 'armv7l' ];then ARCHITECTURE="armhf";fi && \
-    wget -nv -O /tmp/speedtest.tgz "https://install.speedtest.net/app/cli/ookla-speedtest-${SPEEDTEST_VERSION}-linux-${ARCHITECTURE}.tgz" && \
-    tar zxvf /tmp/speedtest.tgz -C /tmp && \
-    cp /tmp/speedtest /usr/local/bin && \
-    chown -R speedtest:speedtest /app && \
-    rm -rf \
-     /tmp/* \
-     /app/requirements
+# Copy requirements first for better layer caching
+COPY src/requirements.txt ./
 
-COPY src/. .
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip==24.3.1 && \
+    pip install --no-cache-dir -r requirements.txt
 
+# Install Speedtest CLI
+RUN ARCHITECTURE=$(uname -m) && \
+    case ${ARCHITECTURE} in \
+        x86_64) SPEEDTEST_ARCH="x86_64" ;; \
+        aarch64) SPEEDTEST_ARCH="aarch64" ;; \
+        armv7l) SPEEDTEST_ARCH="armhf" ;; \
+        armv6l) SPEEDTEST_ARCH="armel" ;; \
+        *) echo "Unsupported architecture: ${ARCHITECTURE}" && exit 1 ;; \
+    esac && \
+    wget -q -O /tmp/speedtest.tgz \
+        "https://install.speedtest.net/app/cli/ookla-speedtest-${SPEEDTEST_VERSION}-linux-${SPEEDTEST_ARCH}.tgz" && \
+    tar -xzf /tmp/speedtest.tgz -C /tmp && \
+    install -m 755 /tmp/speedtest /usr/local/bin/speedtest && \
+    rm -rf /tmp/*
+
+# Copy application code
+COPY src/ ./
+
+# Change ownership and switch to non-root user
+RUN chown -R speedtest:speedtest /app
 USER speedtest
 
-CMD ["python", "-u", "exporter.py"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${SPEEDTEST_PORT:-9798}/health || exit 1
 
-HEALTHCHECK --timeout=10s CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${SPEEDTEST_PORT:=9798}/
+# Expose port
+EXPOSE 9798
+
+# Set default environment variables
+ENV SPEEDTEST_PORT=9798 \
+    SPEEDTEST_CACHE_DURATION=0 \
+    SPEEDTEST_TIMEOUT=90 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Run the application
+CMD ["python", "-u", "exporter.py"]

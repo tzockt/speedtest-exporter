@@ -1,0 +1,126 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main, modernize-codebase]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements-dev.txt
+
+      - name: Check code formatting with Black
+        run: black --check src/
+
+      - name: Check import sorting with isort
+        run: isort --check-only src/
+
+      - name: Lint with Ruff
+        run: ruff check src/
+
+      - name: Type check with mypy
+        run: mypy src/
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements-dev.txt
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=src/ --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  build-test:
+    name: Build & Test Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: speedtest-exporter:ci-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Test Docker image
+        run: |
+          docker run --rm -d --name test-container -p 9798:9798 speedtest-exporter:ci-test
+          sleep 15
+          curl -f http://localhost:9798/health || (docker logs test-container && exit 1)
+          curl -f http://localhost:9798/ || (docker logs test-container && exit 1)
+          docker stop test-container

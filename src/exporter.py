@@ -1,150 +1,315 @@
-import subprocess
+#!/usr/bin/env python3
+"""
+Speedtest Exporter for Prometheus
+
+A modern Prometheus exporter that runs Ookla's Speedtest CLI and exposes metrics.
+"""
+
 import json
-import os
 import logging
-import datetime
-from prometheus_client import make_wsgi_app, Gauge
-from flask import Flask
-from waitress import serve
+import os
+import subprocess
+import sys
+from datetime import datetime
 from shutil import which
+from typing import cast
 
-app = Flask("Speedtest-Exporter")  # Create flask app
+from flask import Flask, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
+from waitress import serve
 
-# Setup logging values
-format_string = 'level=%(levelname)s datetime=%(asctime)s %(message)s'
-logging.basicConfig(encoding='utf-8',
-                    level=logging.DEBUG,
-                    format=format_string)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 
-# Disable Waitress Logs
-log = logging.getLogger('waitress')
-log.disabled = True
+# Disable waitress logs
+logging.getLogger("waitress").setLevel(logging.WARNING)
 
-# Create Metrics
-server = Gauge('speedtest_server_id', 'Speedtest server ID used to test')
-jitter = Gauge('speedtest_jitter_latency_milliseconds',
-               'Speedtest current Jitter in ms')
-ping = Gauge('speedtest_ping_latency_milliseconds',
-             'Speedtest current Ping in ms')
-download_speed = Gauge('speedtest_download_bits_per_second',
-                       'Speedtest current Download Speed in bit/s')
-upload_speed = Gauge('speedtest_upload_bits_per_second',
-                     'Speedtest current Upload speed in bits/s')
-up = Gauge('speedtest_up', 'Speedtest status whether the scrape worked')
+# Flask app
+app = Flask(__name__)
 
-# Cache metrics for how long (seconds)?
-cache_seconds = int(os.environ.get('SPEEDTEST_CACHE_FOR', 0))
-cache_until = datetime.datetime.fromtimestamp(0)
+# Prometheus metrics
+speedtest_server_id = Gauge(
+    "speedtest_server_id", "Speedtest server ID used for testing"
+)
+speedtest_jitter = Gauge(
+    "speedtest_jitter_latency_milliseconds", "Speedtest jitter in milliseconds"
+)
+speedtest_ping = Gauge(
+    "speedtest_ping_latency_milliseconds", "Speedtest ping latency in milliseconds"
+)
+speedtest_download = Gauge(
+    "speedtest_download_bits_per_second", "Speedtest download speed in bits per second"
+)
+speedtest_upload = Gauge(
+    "speedtest_upload_bits_per_second", "Speedtest upload speed in bits per second"
+)
+speedtest_up = Gauge("speedtest_up", "Speedtest status - 1 if successful, 0 if failed")
+
+# Configuration
+CACHE_DURATION = int(os.environ.get("SPEEDTEST_CACHE_DURATION", "0"))
+SERVER_ID = os.environ.get("SPEEDTEST_SERVER_ID")
+TIMEOUT = int(os.environ.get("SPEEDTEST_TIMEOUT", "90"))
+PORT = int(os.environ.get("SPEEDTEST_PORT", "9798"))
+
+# Cache
+last_test_time = datetime.min
+cached_metrics: dict[str, int | float] | None = None
 
 
-def bytes_to_bits(bytes_per_sec):
-    return bytes_per_sec * 8
+class SpeedtestError(Exception):
+    """Custom exception for speedtest errors."""
+
+    pass
 
 
-def bits_to_megabits(bits_per_sec):
-    megabits = round(bits_per_sec * (10**-6), 2)
-    return str(megabits) + "Mbps"
+def bytes_to_bits(bytes_per_sec: int | float) -> float:
+    """Convert bytes per second to bits per second."""
+    return float(bytes_per_sec) * 8
 
 
-def is_json(myjson):
+def bits_to_megabits(bits_per_sec: int | float) -> float:
+    """Convert bits per second to megabits per second."""
+    return round(float(bits_per_sec) * 1e-6, 2)
+
+
+def validate_speedtest_binary() -> None:
+    """Validate that the official Speedtest CLI is installed and accessible."""
+    if not which("speedtest"):
+        logger.error(
+            "Speedtest CLI not found. Please install from: "
+            "https://www.speedtest.net/apps/cli"
+        )
+        sys.exit(1)
+
     try:
-        json.loads(myjson)
-    except ValueError:
-        return False
-    return True
+        result = subprocess.run(
+            ["speedtest", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+
+        if "Speedtest by Ookla" not in result.stdout:
+            logger.error(
+                "Non-official Speedtest CLI detected. Please install the official "
+                "version from: https://www.speedtest.net/apps/cli"
+            )
+            sys.exit(1)
+
+        logger.info(f"Speedtest CLI validated: {result.stdout.strip()}")
+
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+        logger.error(f"Failed to validate Speedtest CLI: {e}")
+        sys.exit(1)
 
 
-def runTest():
-    serverID = os.environ.get('SPEEDTEST_SERVER')
-    timeout = int(os.environ.get('SPEEDTEST_TIMEOUT', 90))
+def run_speedtest() -> dict[str, int | float]:
+    """
+    Run speedtest and return metrics.
 
+    Returns:
+        Dictionary containing speedtest metrics
+
+    Raises:
+        SpeedtestError: If speedtest fails or returns invalid data
+    """
     cmd = [
-        "speedtest", "--format=json-pretty", "--progress=no",
-        "--accept-license", "--accept-gdpr"
+        "speedtest",
+        "--format=json-pretty",
+        "--progress=no",
+        "--accept-license",
+        "--accept-gdpr",
     ]
-    if serverID:
-        cmd.append(f"--server-id={serverID}")
+
+    if SERVER_ID:
+        cmd.extend(["--server-id", SERVER_ID])
+
+    logger.info(f"Running speedtest with command: {' '.join(cmd)}")
+
     try:
-        output = subprocess.check_output(cmd, timeout=timeout)
-    except subprocess.CalledProcessError as e:
-        output = e.output
-        if not is_json(output):
-            if len(output) > 0:
-                logging.error('Speedtest CLI Error occurred that' +
-                              'was not in JSON format')
-            return (0, 0, 0, 0, 0, 0)
-    except subprocess.TimeoutExpired:
-        logging.error('Speedtest CLI process took too long to complete ' +
-                      'and was killed.')
-        return (0, 0, 0, 0, 0, 0)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=TIMEOUT, check=True
+        )
 
-    if is_json(output):
-        data = json.loads(output)
+        data = json.loads(result.stdout)
+
         if "error" in data:
-            # Socket error
-            print('Something went wrong')
-            print(data['error'])
-            return (0, 0, 0, 0, 0, 0)  # Return all data as 0
-        if "type" in data:
-            if data['type'] == 'log':
-                print(str(data["timestamp"]) + " - " + str(data["message"]))
-            if data['type'] == 'result':
-                actual_server = int(data['server']['id'])
-                actual_jitter = data['ping']['jitter']
-                actual_ping = data['ping']['latency']
-                download = bytes_to_bits(data['download']['bandwidth'])
-                upload = bytes_to_bits(data['upload']['bandwidth'])
-                return (actual_server, actual_jitter, actual_ping, download,
-                        upload, 1)
+            raise SpeedtestError(f"Speedtest error: {data['error']}")
+
+        if data.get("type") != "result":
+            raise SpeedtestError(
+                f"Unexpected speedtest output type: {data.get('type')}"
+            )
+
+        # Extract metrics
+        metrics = {
+            "server_id": int(data["server"]["id"]),
+            "jitter": float(data["ping"]["jitter"]),
+            "ping": float(data["ping"]["latency"]),
+            "download": bytes_to_bits(data["download"]["bandwidth"]),
+            "upload": bytes_to_bits(data["upload"]["bandwidth"]),
+            "up": 1,
+        }
+
+        logger.info(
+            f"Speedtest completed - Server: {metrics['server_id']}, "
+            f"Ping: {metrics['ping']:.2f}ms, "
+            f"Jitter: {metrics['jitter']:.2f}ms, "
+            f"Download: {bits_to_megabits(metrics['download']):.2f}Mbps, "
+            f"Upload: {bits_to_megabits(metrics['upload']):.2f}Mbps"
+        )
+
+        return metrics
+
+    except subprocess.TimeoutExpired as e:
+        logger.error(f"Speedtest timed out after {TIMEOUT} seconds")
+        raise SpeedtestError("Speedtest timeout") from e
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Speedtest command failed: {e}")
+        if e.stdout:
+            try:
+                error_data = json.loads(e.stdout)
+                if "error" in error_data:
+                    raise SpeedtestError(f"Speedtest error: {error_data['error']}")
+            except json.JSONDecodeError:
+                pass
+        raise SpeedtestError("Speedtest command failed") from e
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse speedtest JSON output: {e}")
+        raise SpeedtestError("Invalid JSON output from speedtest") from e
 
 
-@app.route("/metrics")
-def updateResults():
-    global cache_until
+def get_metrics() -> dict[str, int | float]:
+    """
+    Get speedtest metrics, using cache if available and valid.
 
-    if datetime.datetime.now() > cache_until:
-        r_server, r_jitter, r_ping, r_download, r_upload, r_status = runTest()
-        server.set(r_server)
-        jitter.set(r_jitter)
-        ping.set(r_ping)
-        download_speed.set(r_download)
-        upload_speed.set(r_upload)
-        up.set(r_status)
-        logging.info("Server=" + str(r_server) + " Jitter=" + str(r_jitter) +
-                     "ms" + " Ping=" + str(r_ping) + "ms" + " Download=" +
-                     bits_to_megabits(r_download) + " Upload=" +
-                     bits_to_megabits(r_upload))
+    Returns:
+        Dictionary containing speedtest metrics
+    """
+    global last_test_time, cached_metrics
 
-        cache_until = datetime.datetime.now() + datetime.timedelta(
-            seconds=cache_seconds)
+    now = datetime.now()
+    cache_valid = (
+        CACHE_DURATION > 0
+        and cached_metrics is not None
+        and (now - last_test_time).total_seconds() < CACHE_DURATION
+    )
 
-    return make_wsgi_app()
+    if cache_valid:
+        logger.debug("Using cached metrics")
+        return cast(dict[str, int | float], cached_metrics)
+
+    try:
+        metrics = run_speedtest()
+        cached_metrics = metrics
+        last_test_time = now
+        return metrics
+
+    except SpeedtestError as e:
+        logger.error(f"Speedtest failed: {e}")
+        return {
+            "server_id": 0,
+            "jitter": 0,
+            "ping": 0,
+            "download": 0,
+            "upload": 0,
+            "up": 0,
+        }
+
+
+def update_prometheus_metrics(metrics: dict[str, int | float]) -> None:
+    """Update Prometheus metrics with speedtest results."""
+    speedtest_server_id.set(metrics["server_id"])
+    speedtest_jitter.set(metrics["jitter"])
+    speedtest_ping.set(metrics["ping"])
+    speedtest_download.set(metrics["download"])
+    speedtest_upload.set(metrics["upload"])
+    speedtest_up.set(metrics["up"])
 
 
 @app.route("/")
-def mainPage():
-    return ("<h1>Welcome to Speedtest-Exporter.</h1>" +
-            "Click <a href='/metrics'>here</a> to see metrics.")
+def index() -> str:
+    """Health check and info endpoint."""
+    return """
+    <html>
+        <head><title>Speedtest Exporter</title></head>
+        <body>
+            <h1>Speedtest Exporter</h1>
+            <p>Prometheus exporter for Ookla Speedtest CLI</p>
+            <p><a href="/metrics">Metrics</a></p>
+            <p><a href="/health">Health Check</a></p>
+        </body>
+    </html>
+    """
 
 
-def checkForBinary():
-    if which("speedtest") is None:
-        logging.error("Speedtest CLI binary not found. Please install it by" +
-                      " going to the official website.\n" +
-                      "https://www.speedtest.net/apps/cli")
-        exit(1)
-    speedtestVersionDialog = (subprocess.run(['speedtest', '--version'],
-                              capture_output=True, text=True))
-    if "Speedtest by Ookla" not in speedtestVersionDialog.stdout:
-        logging.error("Speedtest CLI that is installed is not the official" +
-                      " one. Please install it by going to the official" +
-                      " website.\nhttps://www.speedtest.net/apps/cli")
-        exit(1)
+@app.route("/health")
+def health() -> tuple[str, int]:
+    """Health check endpoint."""
+    try:
+        # Quick validation that speedtest binary is accessible
+        subprocess.run(
+            ["speedtest", "--version"], capture_output=True, timeout=5, check=True
+        )
+        return "OK", 200
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+    ):
+        return "ERROR", 500
 
 
-if __name__ == '__main__':
-    checkForBinary()
-    PORT = os.getenv('SPEEDTEST_PORT', 9798)
-    logging.info("Starting Speedtest-Exporter on http://localhost:" +
-                 str(PORT))
-    serve(app, host='0.0.0.0', port=PORT)
+@app.route("/metrics")
+def metrics() -> Response:
+    """Prometheus metrics endpoint."""
+    try:
+        metrics_data = get_metrics()
+        update_prometheus_metrics(metrics_data)
+
+        # Generate Prometheus format
+        output = generate_latest()
+        return Response(output, mimetype=CONTENT_TYPE_LATEST)
+
+    except Exception as e:
+        logger.error(f"Error generating metrics: {e}")
+        # Return empty metrics on error
+        return Response("", mimetype=CONTENT_TYPE_LATEST, status=500)
+
+
+def main() -> None:
+    """Main application entry point."""
+    logger.info("Starting Speedtest Exporter")
+
+    # Log configuration
+    logger.info("Configuration:")
+    logger.info(f"  Port: {PORT}")
+    logger.info(f"  Cache Duration: {CACHE_DURATION}s")
+    logger.info(f"  Timeout: {TIMEOUT}s")
+    logger.info(f"  Server ID: {SERVER_ID or 'Auto'}")
+
+    # Validate speedtest binary
+    validate_speedtest_binary()
+
+    # Start server
+    logger.info(f"Starting server on http://0.0.0.0:{PORT}")
+    serve(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        threads=4,
+        cleanup_interval=30,
+        channel_timeout=120,
+    )
+
+
+if __name__ == "__main__":
+    main()

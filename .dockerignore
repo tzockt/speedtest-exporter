@@ -1,5 +1,77 @@
+# Version control
 .git
-License
-*.md
-Dockerfile
+.gitignore
+
+# CI/CD
 .github
+
+# Documentation
+README.md
+*.md
+docs/
+License
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+.coverage.*
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+.env
+.env.local
+docker-compose.override.yml
+
+# Logs
+*.log
+
+# Development requirements
+src/requirements-dev.txt
+
+# Build artifacts
+Dockerfile
