@@ -1,10 +1,10 @@
 ---
-name: Package Beta Release
+name: Package Release
 
 on:
   push:
     branches:
-      - modernize-codebase
+      - main
   workflow_dispatch:
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
           # twine upload dist/*
 
   build-docker-image:
-    name: Build Beta Docker Image
+    name: Build Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -74,8 +74,8 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
-            type=raw,value=beta
-            type=raw,value=2.0.0-beta.1
+            type=raw,value=latest
+            type=raw,value=2.0.0
 
       - name: Build and push
         uses: docker/build-push-action@v6
