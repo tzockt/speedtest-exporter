@@ -7,7 +7,7 @@ black==25.1.0
 isort==5.13.2
 
 # Type checking
-mypy==1.13.0
+mypy==1.18.1
 
 # Testing
 pytest==8.3.4
