@@ -61,7 +61,7 @@
       }
     ]
   },
-  "description": "Dashboard for Speedtest Exporter https://github.com/MiguelNdeCarvalho/speedtest-exporter",
+  "description": "Enhanced Dashboard for Speedtest Exporter with improved visualizations and thresholds",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "gnetId": 13665,
@@ -210,12 +210,148 @@
       "type": "stat"
     },
     {
+      "description": "Percentage of successful speedtests over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 12,
+        "x": 0,
+        "y": 3
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "exemplar": true,
+          "expr": "avg_over_time(speedtest_up{instance=\"$instance\", job=\"$job\"}[24h]) * 100",
+          "interval": "",
+          "legendFormat": "24h Uptime",
+          "refId": "A"
+        }
+      ],
+      "title": "Availability (24h)",
+      "type": "stat"
+    },
+    {
+      "description": "Time since last successful speedtest",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 300
+              },
+              {
+                "color": "red",
+                "value": 600
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 12,
+        "x": 12,
+        "y": 3
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "exemplar": true,
+          "expr": "time() - timestamp(speedtest_up{instance=\"$instance\", job=\"$job\"} == 1)",
+          "interval": "",
+          "legendFormat": "Last Test",
+          "refId": "A"
+        }
+      ],
+      "title": "Last Successful Test",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 3
+        "y": 6
       },
       "id": 8,
       "panels": [],
@@ -247,7 +383,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 4
+        "y": 7
       },
       "id": 10,
       "options": {
@@ -288,12 +424,25 @@
           },
           "mappings": [],
           "min": 0,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "green",
+                "value": 25
+              },
+              {
+                "color": "blue",
+                "value": 50
               }
             ]
           },
@@ -305,7 +454,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 4
+        "y": 7
       },
       "id": 12,
       "options": {
@@ -317,7 +466,7 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
+        "showThresholdLabels": true,
         "showThresholdMarkers": true
       },
       "pluginVersion": "8.4.3",
@@ -362,7 +511,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 4
+        "y": 7
       },
       "id": 13,
       "options": {
@@ -374,7 +523,7 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
+        "showThresholdLabels": true,
         "showThresholdMarkers": true
       },
       "pluginVersion": "8.4.3",
@@ -402,12 +551,25 @@
           },
           "mappings": [],
           "min": 0,
+          "max": 50,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "orange",
+                "value": 25
+              },
+              {
+                "color": "red",
+                "value": 40
               }
             ]
           },
@@ -419,7 +581,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 4
+        "y": 7
       },
       "id": 11,
       "options": {
@@ -431,7 +593,7 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
+        "showThresholdLabels": true,
         "showThresholdMarkers": true
       },
       "pluginVersion": "8.4.3",
@@ -457,11 +619,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 15
       },
       "id": 6,
       "panels": [],
-      "title": "Graphics",
+      "title": "Speed Charts",
       "type": "row"
     },
     {
@@ -519,9 +681,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 13
+        "y": 16
       },
       "id": 2,
       "options": {
@@ -551,12 +713,37 @@
           "interval": "",
           "legendFormat": "Download Speed (Mbits/s)",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "exemplar": true,
+          "expr": "speedtest_upload_bits_per_second{instance=\"$instance\", job=\"$job\"}*10^-6",
+          "interval": "",
+          "legendFormat": "Upload Speed (Mbits/s)",
+          "refId": "B"
         }
       ],
-      "title": "Download Speed (Mbits/s)",
+      "title": "Combined Speed Chart (Mbits/s)",
       "type": "timeseries"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Individual Speed Charts",
+      "type": "row"
+    },
+    {
+      "description": "Download speed over time with detailed statistics",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -610,9 +797,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 22
+        "y": 26
       },
       "id": 3,
       "options": {
@@ -645,6 +832,98 @@
         }
       ],
       "title": "Upload Speed (Mbits/s)",
+      "type": "timeseries"
+    },
+    {
+      "description": "Download speed individual chart for detailed analysis",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Download Speed",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 100,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Mbits"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "min"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "exemplar": true,
+          "expr": "speedtest_download_bits_per_second{instance=\"$instance\", job=\"$job\"}*10^-6",
+          "interval": "",
+          "legendFormat": "Download Speed (Mbits/s)",
+          "refId": "A"
+        }
+      ],
+      "title": "Download Speed (Individual)",
       "type": "timeseries"
     },
     {
@@ -703,7 +982,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 35
       },
       "id": 4,
       "options": {
@@ -800,12 +1079,36 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-6h",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
   "timezone": "",
-  "title": "Speedtest-Exporter Dashboard",
+  "title": "Enhanced Speedtest-Exporter Dashboard",
   "uid": "-fs18ztMz",
   "version": 10,
   "weekStart": ""
