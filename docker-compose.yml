@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  speedtest-exporter:
+    image: ghcr.io/tzockt/speedtest-exporter:latest
+    container_name: speedtest-exporter
+    restart: unless-stopped
+    ports:
+      - "9798:9798"
+    environment:
+      - SPEEDTEST_CACHE_DURATION=300  # 5 minutes cache
+      - SPEEDTEST_TIMEOUT=90
+      - SPEEDTEST_PORT=9798
+      # - SPEEDTEST_SERVER_ID=12345  # Optional: specify server ID
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9798/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
