@@ -16,4 +16,4 @@ pytest-mock==3.15.1
 
 # Documentation
 mkdocs==1.6.1
-mkdocs-material==9.6.20
+mkdocs-material==9.6.21
