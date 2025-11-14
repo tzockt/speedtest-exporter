@@ -4,7 +4,7 @@
 # Code formatting and linting
 ruff==0.14.5
 black==25.11.0
-isort==6.0.1
+isort==7.0.0
 
 # Type checking
 mypy==1.18.1
