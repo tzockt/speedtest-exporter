@@ -3,7 +3,7 @@
 
 # Code formatting and linting
 ruff==0.14.9
-black==25.11.0
+black==25.12.0
 isort==7.0.0
 
 # Type checking
