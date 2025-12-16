@@ -1,10 +1,13 @@
 # Use specific Python version with security updates
 FROM python:3.15.0a2-alpine3.21
 
+# Build arguments
+ARG VERSION=dev
+
 # Metadata
 LABEL maintainer="tzockt" \
       description="Speedtest Exporter for Prometheus" \
-      version="2.0.0" \
+      version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/tzockt/speedtest-exporter"
 
 # Speedtest CLI version

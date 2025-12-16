@@ -54,6 +54,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Get version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -75,7 +81,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=raw,value=latest
-            type=raw,value=2.0.0
+            type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -86,5 +92,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

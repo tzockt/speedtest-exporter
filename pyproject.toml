@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "speedtest-exporter"
-version = "2.0.0-beta.1"
+version = "2.0.1"
 description = "Prometheus exporter for Ookla Speedtest CLI"
 authors = [
     {name = "tzockt", email = "noreply@github.com"}
