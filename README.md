@@ -134,6 +134,34 @@ docker build -t speedtest-exporter .
 docker run -p 9798:9798 speedtest-exporter
 ```
 
+### Releasing a New Version
+
+The project uses a single source of truth for versioning. To release a new version:
+
+1. **Update the version** in `pyproject.toml`:
+   ```toml
+   version = "2.0.2"
+   ```
+
+2. **Commit and push** the change:
+   ```bash
+   git add pyproject.toml
+   git commit -m "chore: bump version to 2.0.2"
+   git push
+   ```
+
+3. **Create and push a git tag**:
+   ```bash
+   git tag v2.0.2
+   git push origin v2.0.2
+   ```
+
+This will automatically trigger the release workflow which:
+- Builds multi-architecture Docker images
+- Tags them with the version (e.g., `2.0.2`, `2.0`, `2`, `latest`)
+- Generates an SBOM (Software Bill of Materials)
+- Creates a GitHub Release with auto-generated changelog
+
 ## Architecture Support
 
 The Docker images support multiple architectures:
