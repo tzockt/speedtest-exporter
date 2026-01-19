@@ -6,4 +6,4 @@ Werkzeug==3.1.4
 waitress==3.0.2
 
 # Prometheus client
-prometheus-client==0.23.1
+prometheus-client==0.24.1
