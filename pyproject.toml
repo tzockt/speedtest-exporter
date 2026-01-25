@@ -14,9 +14,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "Flask>=3.1.0",
-    "Werkzeug>=3.1.3",
+    "Werkzeug>=3.1.5",
     "waitress>=3.0.2",
-    "prometheus-client>=0.21.1",
+    "prometheus-client>=0.24.0",
 ]
 keywords = ["prometheus", "speedtest", "monitoring", "exporter"]
 classifiers = [
