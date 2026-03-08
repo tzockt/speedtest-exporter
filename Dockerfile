@@ -1,5 +1,5 @@
 # Use specific Python version with security updates
-FROM python:3.13-alpine3.21
+FROM python:3.14-alpine3.21
 
 # Build arguments
 ARG VERSION=dev
