@@ -9,20 +9,14 @@ description = "Prometheus exporter for Ookla Speedtest CLI"
 authors = [
     {name = "tzockt", email = "noreply@github.com"}
 ]
-license = {text = "Apache-2.0"}
+license = {text = "GPL-3.0-only"}
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-    "Flask>=3.1.0",
-    "Werkzeug>=3.1.5",
-    "waitress>=3.0.2",
-    "prometheus-client>=0.24.0",
-]
 keywords = ["prometheus", "speedtest", "monitoring", "exporter"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",

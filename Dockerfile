@@ -1,5 +1,5 @@
 # Use specific Python version with security updates
-FROM python:3.14-alpine3.21
+FROM python:3.13-alpine3.21
 
 # Build arguments
 ARG VERSION=dev
@@ -43,7 +43,7 @@ RUN ARCHITECTURE=$(uname -m) && \
         armv6l) SPEEDTEST_ARCH="armel" ;; \
         *) echo "Unsupported architecture: ${ARCHITECTURE}" && exit 1 ;; \
     esac && \
-    wget -q -O /tmp/speedtest.tgz \
+    wget -q --timeout=30 -O /tmp/speedtest.tgz \
         "https://install.speedtest.net/app/cli/ookla-speedtest-${SPEEDTEST_VERSION}-linux-${SPEEDTEST_ARCH}.tgz" && \
     tar -xzf /tmp/speedtest.tgz -C /tmp && \
     install -m 755 /tmp/speedtest /usr/local/bin/speedtest && \

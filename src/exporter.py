@@ -10,6 +10,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 from datetime import datetime
 from shutil import which
 from typing import cast
@@ -57,6 +58,7 @@ TIMEOUT = int(os.environ.get("SPEEDTEST_TIMEOUT", "90"))
 PORT = int(os.environ.get("SPEEDTEST_PORT", "9798"))
 
 # Cache
+_cache_lock = threading.Lock()
 last_test_time = datetime.min
 cached_metrics: dict[str, int | float] | None = None
 
@@ -197,20 +199,22 @@ def get_metrics() -> dict[str, int | float]:
     global last_test_time, cached_metrics
 
     now = datetime.now()
-    cache_valid = (
-        CACHE_DURATION > 0
-        and cached_metrics is not None
-        and (now - last_test_time).total_seconds() < CACHE_DURATION
-    )
 
-    if cache_valid:
-        logger.debug("Using cached metrics")
-        return cast(dict[str, int | float], cached_metrics)
+    with _cache_lock:
+        cache_valid = (
+            CACHE_DURATION > 0
+            and cached_metrics is not None
+            and (now - last_test_time).total_seconds() < CACHE_DURATION
+        )
+        if cache_valid:
+            logger.debug("Using cached metrics")
+            return cast(dict[str, int | float], cached_metrics)
 
     try:
         metrics = run_speedtest()
-        cached_metrics = metrics
-        last_test_time = now
+        with _cache_lock:
+            cached_metrics = metrics
+            last_test_time = now
         return metrics
 
     except SpeedtestError as e:
@@ -279,9 +283,8 @@ def metrics() -> Response:
         output = generate_latest()
         return Response(output, mimetype=CONTENT_TYPE_LATEST)
 
-    except Exception as e:
-        logger.error(f"Error generating metrics: {e}")
-        # Return empty metrics on error
+    except Exception:
+        logger.exception("Error generating metrics")
         return Response("", mimetype=CONTENT_TYPE_LATEST, status=500)
 
 
