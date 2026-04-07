@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   speedtest-exporter:
     image: ghcr.io/tzockt/speedtest-exporter:latest

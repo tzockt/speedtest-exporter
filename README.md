@@ -2,13 +2,13 @@
 
 [![CI](https://github.com/tzockt/speedtest-exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/tzockt/speedtest-exporter/actions/workflows/ci.yml)
 [![Release](https://github.com/tzockt/speedtest-exporter/actions/workflows/release.yml/badge.svg)](https://github.com/tzockt/speedtest-exporter/actions/workflows/release.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/ghcr.io/tzockt/speedtest-exporter)](https://github.com/tzockt/speedtest-exporter/pkgs/container/speedtest-exporter)
+[![GitHub release](https://img.shields.io/github/v/release/tzockt/speedtest-exporter)](https://github.com/tzockt/speedtest-exporter/releases)
 
 A modern **Prometheus exporter** for **Ookla Speedtest CLI** written in **Python**. This exporter runs internet speed tests and exposes the results as Prometheus metrics.
 
 ## Features
 
-- 🚀 **Modern Python 3.11+ codebase** with type hints and async support
+- 🚀 **Modern Python 3.11+ codebase** with type hints
 - 📊 **Prometheus metrics** for download/upload speeds, ping, jitter, and server info
 - 🐳 **Multi-architecture Docker images** (amd64, arm64, armv7)
 - 🔒 **Security-focused** with non-root containers and minimal attack surface
@@ -30,7 +30,6 @@ docker run -d \
 ### Docker Compose
 
 ```yaml
-version: '3.8'
 services:
   speedtest-exporter:
     image: ghcr.io/tzockt/speedtest-exporter:latest
@@ -111,9 +110,6 @@ cd speedtest-exporter
 
 # Install development dependencies
 pip install -r src/requirements-dev.txt
-
-# Install pre-commit hooks
-pre-commit install
 
 # Run tests
 pytest
