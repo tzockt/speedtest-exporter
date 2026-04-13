@@ -93,7 +93,7 @@ jobs:
           git log --oneline $(git describe --tags --abbrev=0 HEAD^)..HEAD >> CHANGELOG.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: CHANGELOG.md
           generate_release_notes: true
