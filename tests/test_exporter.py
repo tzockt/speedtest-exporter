@@ -1,11 +1,11 @@
 """Tests for the speedtest exporter."""
 
 import json
+import os
 import subprocess
 import sys
-import os
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -15,13 +15,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import exporter
 from exporter import (
     SpeedtestError,
+    app,
     bits_to_megabits,
     bytes_to_bits,
     get_metrics,
     run_speedtest,
     update_prometheus_metrics,
     validate_speedtest_binary,
-    app,
 )
 
 # Sample valid speedtest JSON output
