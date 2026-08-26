@@ -101,7 +101,6 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-    "waitress.*",
     "prometheus_client.*",
 ]
 ignore_missing_imports = true
