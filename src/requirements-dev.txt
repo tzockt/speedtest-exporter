@@ -8,6 +8,7 @@ isort==8.0.1
 
 # Type checking
 mypy==2.3.1
+types-waitress==3.0.1.20260724
 
 # Testing
 pytest==9.1.1
