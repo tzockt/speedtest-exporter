@@ -2,18 +2,18 @@
 -r requirements.txt
 
 # Code formatting and linting
-ruff==0.16.5
-black==26.5.1
-isort==9.0.1
+ruff==0.17.1
+black==26.10.1
+isort==9.0.2
 
 # Type checking
-mypy==2.3.1
+mypy==2.4.0
 types-waitress==3.0.1.20260724
 
 # Testing
 pytest==9.1.1
 pytest-cov==7.1.0
-pytest-mock==3.15.1
+pytest-mock==3.16.0
 
 # Documentation
 mkdocs==1.6.1
