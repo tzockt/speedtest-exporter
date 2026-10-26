@@ -2,7 +2,7 @@
 -r requirements.txt
 
 # Code formatting and linting
-ruff==0.17.1
+ruff==0.17.2
 black==26.10.1
 isort==9.0.2
 
