@@ -7,7 +7,7 @@ black==26.10.1
 isort==9.0.2
 
 # Type checking
-mypy==2.4.0
+mypy==2.4.1
 types-waitress==3.0.1.20260724
 
 # Testing
